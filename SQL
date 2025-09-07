@@ -1,0 +1,166 @@
+#Total customers - customer_analytics_dataset
+SELECT COUNT(*) FROM public.customers1;
+
+#Distribution by country - customer_analytics_dataset
+SELECT country, COUNT(*) AS customers
+FROM public.customers1
+GROUP BY country
+ORDER BY customers DESC;
+
+#Fraud cases share - customer_analytics_dataset
+SELECT COUNT(*) FILTER (WHERE is_fraudulent) AS fraud_cases,
+       COUNT(*) AS total_customers,
+       ROUND(100.0 * COUNT(*) FILTER (WHERE is_fraudulent) / COUNT(*), 2) AS fraud_rate
+FROM public.customers1;
+
+#Churn risk vs. loyalty
+SELECT ROUND(churn_risk::NUMERIC, 2) AS churn_band,
+       AVG(loyalty_score) AS avg_loyalty,
+       COUNT(*) AS customers
+FROM public.customers1
+GROUP BY churn_band
+ORDER BY churn_band DESC;
+
+#Top categories by spend
+SELECT preferred_category,
+       AVG(avg_order_value) AS avg_spend,
+       SUM(total_orders) AS total_orders
+FROM public.customers1
+GROUP BY preferred_category
+ORDER BY avg_spend DESC
+LIMIT 10;
+
+#Distribution by gender
+SELECT gender, COUNT(*) AS customers
+FROM public.customers1
+GROUP BY gender
+ORDER BY customers DESC;
+
+#Age bands
+SELECT CASE
+         WHEN age < 25 THEN '<25'
+         WHEN age BETWEEN 25 AND 34 THEN '25–34'
+         WHEN age BETWEEN 35 AND 44 THEN '35–44'
+         WHEN age BETWEEN 45 AND 54 THEN '45–54'
+         WHEN age BETWEEN 55 AND 64 THEN '55–64'
+         ELSE '65+'
+       END AS age_band,
+       COUNT(*) AS customers
+FROM public.customers1
+GROUP BY age_band
+ORDER BY age_band;
+
+#Average churn risk by country
+SELECT country, ROUND(AVG(churn_risk), 3) AS avg_churn
+FROM public.customers1
+GROUP BY country
+ORDER BY avg_churn DESC
+LIMIT 10;
+
+#Customers with high churn risk
+SELECT customer_id, country, loyalty_score, churn_risk
+FROM public.customers1
+WHERE churn_risk > 0.5
+ORDER BY churn_risk DESC
+LIMIT 20;
+
+#Loyalty segments
+SELECT CASE
+         WHEN loyalty_score >= 80 THEN 'High Loyalty'
+         WHEN loyalty_score BETWEEN 50 AND 79 THEN 'Medium Loyalty'
+         ELSE 'Low Loyalty'
+       END AS loyalty_segment,
+       COUNT(*) AS customers,
+       ROUND(AVG(avg_order_value), 2) AS avg_spend
+FROM public.customers1
+GROUP BY loyalty_segment
+ORDER BY customers DESC;
+
+#Email engagement by loyalty
+SELECT loyalty_score,
+       ROUND(AVG(email_open_rate), 2) AS avg_open_rate
+FROM public.customers1
+GROUP BY loyalty_score
+ORDER BY loyalty_score DESC;
+
+#Customer tenure
+SELECT DATE_PART('year', AGE(customer_since))::INT AS years_with_company,
+       COUNT(*) AS customers
+FROM public.customers1
+GROUP BY years_with_company
+ORDER BY years_with_company DESC;
+
+#Fraud cases by country
+SELECT country,
+       COUNT(*) FILTER (WHERE is_fraudulent) AS fraud_cases,
+       COUNT(*) AS total_customers,
+       ROUND(100.0 * COUNT(*) FILTER (WHERE is_fraudulent) / COUNT(*), 2) AS fraud_rate
+FROM public.customers1
+GROUP BY country
+HAVING COUNT(*) > 50
+ORDER BY fraud_rate DESC;
+
+#Fraud by product category
+SELECT preferred_category,
+       COUNT(*) FILTER (WHERE is_fraudulent) AS fraud_cases,
+       COUNT(*) AS total_customers,
+       ROUND(100.0 * COUNT(*) FILTER (WHERE is_fraudulent) / COUNT(*), 2) AS fraud_rate
+FROM public.customers1
+GROUP BY preferred_category
+ORDER BY fraud_rate DESC;
+
+#High churn + low loyalty = priority retention segment
+SELECT COUNT(*) AS at_risk_customers
+FROM public.customers1
+WHERE churn_risk > 0.5 AND loyalty_score < 40;
+
+#Categories with most loyal customers
+SELECT preferred_category,
+       AVG(loyalty_score) AS avg_loyalty,
+       COUNT(*) AS customers
+FROM public.customers1
+GROUP BY preferred_category
+ORDER BY avg_loyalty DESC
+LIMIT 10;
+
+#Average spend by churn risk bands
+SELECT CASE
+         WHEN churn_risk < 0.2 THEN 'Low Risk'
+         WHEN churn_risk BETWEEN 0.2 AND 0.5 THEN 'Medium Risk'
+         ELSE 'High Risk'
+       END AS churn_segment,
+       ROUND(AVG(avg_order_value), 2) AS avg_spend,
+       COUNT(*) AS customers
+FROM public.customers1
+GROUP BY churn_segment
+ORDER BY churn_segment;
+
+#Age bands with counts and avg spend
+SELECT CASE
+         WHEN age < 25 THEN '<25'
+         WHEN age BETWEEN 25 AND 34 THEN '25–34'
+         WHEN age BETWEEN 35 AND 44 THEN '35–44'
+         WHEN age BETWEEN 45 AND 54 THEN '45–54'
+         WHEN age BETWEEN 55 AND 64 THEN '55–64'
+         ELSE '65+'
+       END AS age_band,
+       gender,
+       COUNT(*) AS customers,
+       ROUND(AVG(avg_order_value),2) AS avg_spend,
+       ROUND(AVG(loyalty_score),1) AS avg_loyalty
+FROM public.customers1
+GROUP BY age_band, gender
+ORDER BY age_band, gender;
+
+#Preferred Category Segments
+SELECT preferred_category,
+       COUNT(*) AS customers,
+       ROUND(AVG(avg_order_value),2) AS avg_spend,
+       ROUND(AVG(loyalty_score),1) AS avg_loyalty,
+       ROUND(AVG(churn_risk),2) AS avg_churn
+FROM public.customers1
+GROUP BY preferred_category
+ORDER BY customers DESC;
+
+
+
